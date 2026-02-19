@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presenter - Audience View</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    body { margin: 0; overflow: hidden; }
+    .waiting { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Segoe UI', sans-serif; color: #888; font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="connection-status disconnected" id="status" style="position:fixed;top:8px;right:8px;width:10px;height:10px;border-radius:50%;z-index:9999;"></div>
+  <div id="waiting" class="waiting">Waiting for presentation to start...</div>
+  <div class="reveal" id="reveal-container" style="display:none;">
+    <div class="slides" id="slides-container"></div>
+  </div>
+
+  <link rel="stylesheet" href="css/moods.css">
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/deck-renderer.js"></script>
+  <script src="js/audience.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presenter</title>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body>
+  <div class="dashboard">
+    <h1>Presenter</h1>
+    <p class="subtitle">Presentation solution with mobile remote control</p>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h2 style="margin-bottom:0;">Presentations</h2>
+        <a class="btn btn-sm" href="/builder.html">+ Create New</a>
+      </div>
+      <ul class="pres-list" id="pres-list">
+        <li><span class="name">Loading...</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Upload (PDF / PPTX)</h2>
+      <div class="upload-area" id="upload-area">
+        <p>Drag & drop a file here, or click to select</p>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.5rem;">Supports .pdf and .pptx</p>
+        <input type="file" id="file-input" accept=".pdf,.pptx">
+      </div>
+      <div id="upload-status" style="margin-top:1rem;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Connect</h2>
+      <div class="qr-section" id="qr-section">
+        <div class="qr-item">
+          <p><strong>Remote Control</strong></p>
+          <img id="qr-remote" src="" alt="QR Remote" width="180" height="180">
+          <p class="url" id="url-remote">Loading...</p>
+        </div>
+        <div class="qr-item">
+          <p><strong>Audience View</strong></p>
+          <img id="qr-audience" src="" alt="QR Audience" width="180" height="180">
+          <p class="url" id="url-audience">Loading...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load presentations
+    async function loadPresentations() {
+      const res = await fetch('/api/presentations');
+      const presentations = await res.json();
+      const list = document.getElementById('pres-list');
+
+      if (presentations.length === 0) {
+        list.innerHTML = '<li><span class="name" style="color:var(--text-muted)">No presentations found. Add .md files to the presentations/ folder.</span></li>';
+        return;
+      }
+
+      list.innerHTML = presentations.map(p => {
+        const editBtn = p.type === 'deck'
+          ? `<a class="btn btn-sm btn-outline" href="/builder.html?file=${encodeURIComponent(p.file)}">Edit</a>`
+          : '';
+        return `<li>
+          <span class="name">${p.name}</span>
+          <span style="display:flex;gap:0.5rem;align-items:center;">
+            <span class="type">${p.type}</span>
+            ${editBtn}
+            <a class="btn btn-sm" href="/slides.html?file=${encodeURIComponent(p.file)}">Present</a>
+            <a class="btn btn-sm btn-outline" href="/presenter.html">Speaker View</a>
+          </span>
+        </li>`;
+      }).join('');
+    }
+
+    // Load QR codes
+    async function loadQR() {
+      try {
+        const [remoteRes, audienceRes, infoRes] = await Promise.all([
+          fetch('/api/qrcode/remote'),
+          fetch('/api/qrcode/audience'),
+          fetch('/api/info')
+        ]);
+        const remote = await remoteRes.json();
+        const audience = await audienceRes.json();
+        const info = await infoRes.json();
+
+        document.getElementById('qr-remote').src = remote.qr;
+        document.getElementById('url-remote').textContent = remote.url;
+        document.getElementById('qr-audience').src = audience.qr;
+        document.getElementById('url-audience').textContent = audience.url;
+      } catch (e) {
+        console.error('QR load error:', e);
+      }
+    }
+
+    // File upload
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const uploadStatus = document.getElementById('upload-status');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) uploadFile(fileInput.files[0]);
+    });
+
+    async function uploadFile(file) {
+      uploadStatus.innerHTML = '<span style="color:var(--accent)">Uploading...</span>';
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) {
+          uploadStatus.innerHTML = `<span style="color:var(--danger)">${data.error}</span>`;
+        } else {
+          uploadStatus.innerHTML = `
+            <span style="color:var(--success)">Uploaded: ${data.originalname}</span>
+            <a class="btn btn-sm" href="/slides.html?file=${encodeURIComponent(data.filename)}" style="margin-left:1rem;">Present</a>
+          `;
+        }
+      } catch (e) {
+        uploadStatus.innerHTML = `<span style="color:var(--danger)">Upload failed: ${e.message}</span>`;
+      }
+    }
+
+    loadPresentations();
+    loadQR();
+  </script>
+</body>
+</html>

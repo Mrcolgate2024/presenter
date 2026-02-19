@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "title": "Deck Format Demo",
+    "author": "Bjorn",
+    "created": "2026-02-19",
+    "palette": "default"
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "mood": "dramatic",
+      "layout": "center",
+      "beats": [
+        { "block": "title", "text": "The .deck Format", "enter": "fade" },
+        { "block": "subtitle", "text": "Presentations reimagined", "enter": "rise" }
+      ],
+      "notes": "Welcome everyone. This is a demo of our new presentation format."
+    },
+    {
+      "id": "problem",
+      "mood": "tense",
+      "layout": "center",
+      "beats": [
+        { "block": "heading", "text": "The Problem with Slides" },
+        { "block": "list", "items": [
+          "PowerPoint: 30 years of the same paradigm",
+          "Markdown slides: Developer-only, no visual editing",
+          "Google Slides: Cloud-locked, no offline",
+          "All of them: Themes instead of emotions"
+        ], "reveal": "one-by-one", "enter": "rise" }
+      ],
+      "notes": "Walk through each pain point. Let them sink in."
+    },
+    {
+      "id": "solution",
+      "mood": "inspiring",
+      "layout": "center",
+      "beats": [
+        { "block": "title", "text": "Scenes, not Slides", "enter": "zoom" },
+        { "block": "text", "text": "Think in moments. Set a mood. Let the format handle the rest.", "enter": "fade" }
+      ],
+      "notes": "This is the big reveal. Pause for effect."
+    },
+    {
+      "id": "moods",
+      "mood": "calm",
+      "layout": "center",
+      "beats": [
+        { "block": "heading", "text": "Mood-Driven Design" },
+        { "block": "text", "text": "Instead of picking colors and fonts, you pick an emotion. The format does the rest.", "enter": "fade" },
+        { "block": "list", "items": [
+          "Dramatic - High contrast, theatrical",
+          "Calm - Soft gradients, gentle",
+          "Energetic - Bold, fast, punchy",
+          "Focused - Minimal, code-friendly",
+          "Tense - Dark, urgent, red accents",
+          "Inspiring - Warm, gradient, hopeful",
+          "Playful - Colorful, bouncy, fun"
+        ], "enter": "rise" }
+      ],
+      "notes": "Point out that this very slide uses the 'calm' mood."
+    },
+    {
+      "id": "metrics",
+      "mood": "energetic",
+      "layout": "split",
+      "beats": [
+        { "block": "heading", "text": "Smart Block Types" },
+        { "block": "metric", "value": "7", "label": "unique moods", "enter": "zoom", "position": "right" }
+      ],
+      "notes": "Highlight the metric block - it auto-formats the big number."
+    },
+    {
+      "id": "code-demo",
+      "mood": "focused",
+      "layout": "focus",
+      "beats": [
+        { "block": "heading", "text": "Built for Code" },
+        { "block": "code", "language": "json", "code": "{\n  \"mood\": \"focused\",\n  \"layout\": \"focus\",\n  \"beats\": [\n    { \"block\": \"code\", \"language\": \"json\" }\n  ]\n}", "enter": "fade" }
+      ],
+      "notes": "Show how the format itself is the content."
+    },
+    {
+      "id": "finale",
+      "mood": "inspiring",
+      "layout": "center",
+      "beats": [
+        { "block": "title", "text": "Build Something Beautiful", "enter": "fade" },
+        { "block": "subtitle", "text": "Open the builder and start creating", "enter": "rise" }
+      ],
+      "notes": "Call to action. Invite them to try the builder."
+    }
+  ]
+}

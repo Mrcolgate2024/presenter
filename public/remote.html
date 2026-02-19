@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Presenter - Remote</title>
+  <link rel="stylesheet" href="css/custom.css">
+  <style>
+    .remote-swipe-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      touch-action: pan-y;
+      min-height: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="connection-status disconnected" id="status"></div>
+  <div class="remote">
+    <div class="remote-header">
+      <div class="slide-num" id="slide-num">0</div>
+      <div class="slide-total">/ <span id="slide-total">0</span></div>
+    </div>
+
+    <div class="remote-progress">
+      <div class="remote-progress-bar" id="progress-bar" style="width: 0%"></div>
+    </div>
+
+    <div class="remote-swipe-area" id="swipe-area">
+      <div class="remote-notes" id="notes"></div>
+    </div>
+
+    <div class="remote-timer" id="timer">00:00</div>
+
+    <div class="remote-controls">
+      <button class="remote-btn prev" id="btn-prev">&#9664;</button>
+      <button class="remote-btn next" id="btn-next">&#9654;</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/remote.js"></script>
+</body>
+</html>

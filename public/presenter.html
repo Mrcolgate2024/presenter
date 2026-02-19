@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presenter - Speaker View</title>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body>
+  <div class="connection-status disconnected" id="status"></div>
+  <div class="presenter-view">
+    <div class="current-slide">
+      <span class="slide-label">Current</span>
+      <iframe id="current-frame" src="about:blank"></iframe>
+    </div>
+    <div class="next-slide">
+      <span class="slide-label">Next</span>
+      <iframe id="next-frame" src="about:blank"></iframe>
+    </div>
+    <div class="notes-panel">
+      <h3>Speaker Notes</h3>
+      <div id="notes">No notes for this slide.</div>
+    </div>
+    <div class="bottom-bar">
+      <div class="timer" id="timer">00:00:00</div>
+      <div class="slide-info">
+        Slide <span id="slide-num">0</span> / <span id="slide-total">0</span>
+      </div>
+      <div>
+        <button class="btn btn-sm btn-outline" id="btn-prev">Prev</button>
+        <button class="btn btn-sm" id="btn-next">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/presenter.js"></script>
+</body>
+</html>
