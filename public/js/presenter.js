@@ -1,36 +1,24 @@
-const socket = io();
-
 const currentFrame = document.getElementById('current-frame');
 const nextFrame = document.getElementById('next-frame');
 const notesEl = document.getElementById('notes');
 const timerEl = document.getElementById('timer');
 const slideNumEl = document.getElementById('slide-num');
 const slideTotalEl = document.getElementById('slide-total');
-const statusEl = document.getElementById('status');
 
 let state = { indexh: 0, indexv: 0, totalSlides: 0, notes: [] };
 let timerStart = null;
 let timerInterval = null;
+let framesLoaded = false;
 
-// Connection
-socket.on('connect', () => {
-  statusEl.className = 'connection-status connected';
-});
-socket.on('disconnect', () => {
-  statusEl.className = 'connection-status disconnected';
-});
-
-// Load presentation in iframes
-socket.on('state-update', (s) => {
-  state = s;
-  if (s.presentation) {
-    loadFrames(s.presentation);
-  }
+// Realtime listeners
+onBroadcast('presentation-loaded', (s) => {
+  state = { ...state, ...s, indexh: 0, indexv: 0 };
+  if (s.presentation) loadFrames(s.presentation);
   updateUI();
 });
 
-socket.on('slide-changed', (s) => {
-  state = s;
+onBroadcast('slide-changed', (s) => {
+  state = { ...state, ...s };
   startTimer();
   updateFrameSlides();
   updateUI();
@@ -38,36 +26,32 @@ socket.on('slide-changed', (s) => {
 
 // Navigation
 document.getElementById('btn-next').addEventListener('click', () => {
-  socket.emit('navigate', 'next');
+  broadcast('navigate', { direction: 'next' });
   startTimer();
 });
 
 document.getElementById('btn-prev').addEventListener('click', () => {
-  socket.emit('navigate', 'prev');
+  broadcast('navigate', { direction: 'prev' });
 });
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight' || e.key === ' ') {
-    socket.emit('navigate', 'next');
+    broadcast('navigate', { direction: 'next' });
     startTimer();
   } else if (e.key === 'ArrowLeft') {
-    socket.emit('navigate', 'prev');
+    broadcast('navigate', { direction: 'prev' });
   }
 });
-
-let framesLoaded = false;
 
 function loadFrames(file) {
   if (framesLoaded) return;
   framesLoaded = true;
-
   const baseUrl = `/slides.html?file=${encodeURIComponent(file)}`;
   currentFrame.src = baseUrl + '&mode=audience';
   nextFrame.src = baseUrl + '&mode=audience';
 }
 
 function updateFrameSlides() {
-  // Send postMessage to iframes to navigate
   try {
     if (currentFrame.contentWindow) {
       currentFrame.contentWindow.postMessage({
@@ -77,7 +61,6 @@ function updateFrameSlides() {
       }, '*');
     }
     if (nextFrame.contentWindow) {
-      // Show next slide
       const nextH = state.indexh + 1;
       nextFrame.contentWindow.postMessage({
         type: 'navigate-to',

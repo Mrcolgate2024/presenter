@@ -22,128 +22,79 @@
     </div>
 
     <div class="card">
-      <h2>Upload (PDF / PPTX)</h2>
-      <div class="upload-area" id="upload-area">
-        <p>Drag & drop a file here, or click to select</p>
-        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.5rem;">Supports .pdf and .pptx</p>
-        <input type="file" id="file-input" accept=".pdf,.pptx">
-      </div>
-      <div id="upload-status" style="margin-top:1rem;"></div>
-    </div>
-
-    <div class="card">
       <h2>Connect</h2>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem;">Share these links with your audience and use the remote on your phone.</p>
       <div class="qr-section" id="qr-section">
         <div class="qr-item">
           <p><strong>Remote Control</strong></p>
-          <img id="qr-remote" src="" alt="QR Remote" width="180" height="180">
-          <p class="url" id="url-remote">Loading...</p>
+          <div id="qr-remote" style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:8px;"><span style="color:var(--text-muted);font-size:0.8rem;">Generating...</span></div>
+          <p class="url" id="url-remote"></p>
         </div>
         <div class="qr-item">
           <p><strong>Audience View</strong></p>
-          <img id="qr-audience" src="" alt="QR Audience" width="180" height="180">
-          <p class="url" id="url-audience">Loading...</p>
+          <div id="qr-audience" style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:8px;"><span style="color:var(--text-muted);font-size:0.8rem;">Generating...</span></div>
+          <p class="url" id="url-audience"></p>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
-    // Load presentations
+    // Load presentations from Supabase
     async function loadPresentations() {
-      const res = await fetch('/api/presentations');
-      const presentations = await res.json();
       const list = document.getElementById('pres-list');
-
-      if (presentations.length === 0) {
-        list.innerHTML = '<li><span class="name" style="color:var(--text-muted)">No presentations found. Add .md files to the presentations/ folder.</span></li>';
-        return;
-      }
-
-      list.innerHTML = presentations.map(p => {
-        const editBtn = p.type === 'deck'
-          ? `<a class="btn btn-sm btn-outline" href="/builder.html?file=${encodeURIComponent(p.file)}">Edit</a>`
-          : '';
-        return `<li>
-          <span class="name">${p.name}</span>
-          <span style="display:flex;gap:0.5rem;align-items:center;">
-            <span class="type">${p.type}</span>
-            ${editBtn}
-            <a class="btn btn-sm" href="/slides.html?file=${encodeURIComponent(p.file)}">Present</a>
-            <a class="btn btn-sm btn-outline" href="/presenter.html">Speaker View</a>
-          </span>
-        </li>`;
-      }).join('');
-    }
-
-    // Load QR codes
-    async function loadQR() {
       try {
-        const [remoteRes, audienceRes, infoRes] = await Promise.all([
-          fetch('/api/qrcode/remote'),
-          fetch('/api/qrcode/audience'),
-          fetch('/api/info')
-        ]);
-        const remote = await remoteRes.json();
-        const audience = await audienceRes.json();
-        const info = await infoRes.json();
+        const presentations = await PresentationsDB.list();
 
-        document.getElementById('qr-remote').src = remote.qr;
-        document.getElementById('url-remote').textContent = remote.url;
-        document.getElementById('qr-audience').src = audience.qr;
-        document.getElementById('url-audience').textContent = audience.url;
-      } catch (e) {
-        console.error('QR load error:', e);
-      }
-    }
-
-    // File upload
-    const uploadArea = document.getElementById('upload-area');
-    const fileInput = document.getElementById('file-input');
-    const uploadStatus = document.getElementById('upload-status');
-
-    uploadArea.addEventListener('click', () => fileInput.click());
-
-    uploadArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadArea.classList.add('dragover');
-    });
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.classList.remove('dragover');
-    });
-    uploadArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove('dragover');
-      if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
-    });
-
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files.length) uploadFile(fileInput.files[0]);
-    });
-
-    async function uploadFile(file) {
-      uploadStatus.innerHTML = '<span style="color:var(--accent)">Uploading...</span>';
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.error) {
-          uploadStatus.innerHTML = `<span style="color:var(--danger)">${data.error}</span>`;
-        } else {
-          uploadStatus.innerHTML = `
-            <span style="color:var(--success)">Uploaded: ${data.originalname}</span>
-            <a class="btn btn-sm" href="/slides.html?file=${encodeURIComponent(data.filename)}" style="margin-left:1rem;">Present</a>
-          `;
+        if (presentations.length === 0) {
+          list.innerHTML = '<li><span class="name" style="color:var(--text-muted)">No presentations yet. Click "+ Create New" to get started.</span></li>';
+          return;
         }
+
+        list.innerHTML = presentations.map(p => {
+          const editBtn = p.type === 'deck'
+            ? `<a class="btn btn-sm btn-outline" href="/builder.html?file=${encodeURIComponent(p.filename)}">Edit</a>`
+            : '';
+          return `<li>
+            <span class="name">${p.name}</span>
+            <span style="display:flex;gap:0.5rem;align-items:center;">
+              <span class="type">${p.type}</span>
+              ${editBtn}
+              <a class="btn btn-sm" href="/slides.html?file=${encodeURIComponent(p.filename)}">Present</a>
+              <a class="btn btn-sm btn-outline" href="/presenter.html">Speaker View</a>
+            </span>
+          </li>`;
+        }).join('');
       } catch (e) {
-        uploadStatus.innerHTML = `<span style="color:var(--danger)">Upload failed: ${e.message}</span>`;
+        list.innerHTML = `<li><span class="name" style="color:var(--danger)">Error loading: ${e.message}</span></li>`;
+      }
+    }
+
+    // Generate QR codes client-side
+    async function generateQR() {
+      const base = window.location.origin;
+      const remoteUrl = `${base}/remote.html`;
+      const audienceUrl = `${base}/audience.html`;
+
+      try {
+        const remoteQR = await QRCode.toDataURL(remoteUrl, { width: 180, margin: 1, color: { dark: '#000', light: '#fff' } });
+        const audienceQR = await QRCode.toDataURL(audienceUrl, { width: 180, margin: 1, color: { dark: '#000', light: '#fff' } });
+
+        document.getElementById('qr-remote').innerHTML = `<img src="${remoteQR}" alt="QR Remote" width="180" height="180" style="border-radius:8px;">`;
+        document.getElementById('url-remote').textContent = remoteUrl;
+
+        document.getElementById('qr-audience').innerHTML = `<img src="${audienceQR}" alt="QR Audience" width="180" height="180" style="border-radius:8px;">`;
+        document.getElementById('url-audience').textContent = audienceUrl;
+      } catch (e) {
+        console.error('QR generation error:', e);
       }
     }
 
     loadPresentations();
-    loadQR();
+    generateQR();
   </script>
 </body>
 </html>

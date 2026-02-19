@@ -1,36 +1,19 @@
-const socket = io();
-const statusEl = document.getElementById('status');
-
 let deck = null;
 
-socket.on('connect', () => {
-  statusEl.style.background = '#2ed573';
-});
-socket.on('disconnect', () => {
-  statusEl.style.background = '#ff4757';
-});
-
-// When presentation is loaded by presenter, load same slides here
-socket.on('state-update', async (state) => {
+// When presenter loads a presentation
+onBroadcast('presentation-loaded', async (state) => {
   if (state.presentation && !deck) {
     await loadPresentation(state.presentation);
-    if (deck) {
-      deck.slide(state.indexh, state.indexv || 0);
-    }
   }
 });
 
-socket.on('slide-changed', (state) => {
+onBroadcast('slide-changed', (state) => {
   if (deck) {
     deck.slide(state.indexh, state.indexv || 0);
   }
 });
 
-socket.on('navigate', (direction) => {
-  // Audience doesn't respond to navigate directly, only to slide-changed
-});
-
-socket.on('navigate-to', (data) => {
+onBroadcast('navigate-to', (data) => {
   if (deck) {
     deck.slide(data.indexh, data.indexv || 0);
   }
@@ -39,36 +22,18 @@ socket.on('navigate-to', (data) => {
 async function loadPresentation(file) {
   if (!file) return;
   const ext = file.split('.').pop().toLowerCase();
-
   const container = document.getElementById('slides-container');
 
-  if (ext === 'deck') {
-    const res = await fetch(`/api/presentations/${file}`);
-    const data = await res.json();
-    container.innerHTML = DeckRenderer.render(data.content);
-  } else if (ext === 'md') {
-    const res = await fetch(`/api/presentations/${file}`);
-    const data = await res.json();
-    container.innerHTML = parseMarkdownSlides(data.content);
-  } else if (ext === 'pdf') {
-    try {
-      const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
-      const pdf = await pdfjsLib.getDocument(`/uploads/${file}`).promise;
-      let html = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 2 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        html += `<section><img src="${canvas.toDataURL('image/png')}" style="max-width:100%;max-height:100vh;"></section>`;
-      }
-      container.innerHTML = html;
-    } catch (err) {
-      container.innerHTML = `<section><h2>Error loading PDF</h2><p>${err.message}</p></section>`;
+  try {
+    const pres = await PresentationsDB.get(file);
+
+    if (ext === 'deck') {
+      container.innerHTML = DeckRenderer.render(pres.content);
+    } else if (ext === 'md') {
+      container.innerHTML = parseMarkdownSlides(pres.markdown_content || pres.content);
     }
+  } catch (err) {
+    container.innerHTML = `<section><h2>Error loading presentation</h2><p>${err.message}</p></section>`;
   }
 
   document.getElementById('waiting').style.display = 'none';

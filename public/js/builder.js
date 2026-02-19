@@ -28,10 +28,9 @@ const blockDropdown = document.getElementById('block-dropdown');
 
   if (file) {
     try {
-      const res = await fetch(`/api/presentations/${file}`);
-      const data = await res.json();
-      if (data.type === 'deck') {
-        deck = data.content;
+      const pres = await PresentationsDB.get(file);
+      if (pres && pres.type === 'deck') {
+        deck = pres.content;
       }
     } catch (e) {
       console.error('Failed to load deck:', e);
@@ -349,25 +348,16 @@ function markDirty() {
 
 async function saveDeck() {
   deck.meta.title = titleInput.value || 'Untitled';
-  const filename = (deck.meta.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
+  const safeName = (deck.meta.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
+  const filename = safeName + '.deck';
 
   try {
-    const res = await fetch('/api/presentations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename, deck })
-    });
-    const data = await res.json();
-    if (data.success) {
-      isDirty = false;
-      // Update URL without reload
-      const url = new URL(window.location);
-      url.searchParams.set('file', data.file);
-      history.replaceState({}, '', url);
-      showToast('Saved!');
-    } else {
-      showToast('Save failed: ' + (data.error || 'Unknown error'), true);
-    }
+    await PresentationsDB.save(deck.meta.title, filename, 'deck', deck);
+    isDirty = false;
+    const url = new URL(window.location);
+    url.searchParams.set('file', filename);
+    history.replaceState({}, '', url);
+    showToast('Saved!');
   } catch (e) {
     showToast('Save failed: ' + e.message, true);
   }

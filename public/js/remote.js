@@ -1,11 +1,8 @@
-const socket = io();
-
 const slideNum = document.getElementById('slide-num');
 const slideTotal = document.getElementById('slide-total');
 const progressBar = document.getElementById('progress-bar');
 const notesEl = document.getElementById('notes');
 const timerEl = document.getElementById('timer');
-const statusEl = document.getElementById('status');
 const btnPrev = document.getElementById('btn-prev');
 const btnNext = document.getElementById('btn-next');
 const swipeArea = document.getElementById('swipe-area');
@@ -15,43 +12,35 @@ let timerStarted = false;
 let timerStart = null;
 let timerInterval = null;
 
-// Connection status
-socket.on('connect', () => {
-  statusEl.className = 'connection-status connected';
-});
-socket.on('disconnect', () => {
-  statusEl.className = 'connection-status disconnected';
-});
-
-// State sync
-socket.on('state-update', (s) => {
-  state = s;
+// Realtime listeners
+onBroadcast('slide-changed', (s) => {
+  state = { ...state, ...s };
+  startTimer();
   updateUI();
 });
 
-socket.on('slide-changed', (s) => {
-  state = s;
-  startTimer();
+onBroadcast('presentation-loaded', (s) => {
+  state = { ...state, ...s, indexh: 0, indexv: 0 };
   updateUI();
 });
 
 // Navigation
 btnNext.addEventListener('click', () => {
-  socket.emit('navigate', 'next');
+  broadcast('navigate', { direction: 'next' });
   startTimer();
 });
 
 btnPrev.addEventListener('click', () => {
-  socket.emit('navigate', 'prev');
+  broadcast('navigate', { direction: 'prev' });
 });
 
 // Keyboard
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight' || e.key === ' ') {
-    socket.emit('navigate', 'next');
+    broadcast('navigate', { direction: 'next' });
     startTimer();
   } else if (e.key === 'ArrowLeft') {
-    socket.emit('navigate', 'prev');
+    broadcast('navigate', { direction: 'prev' });
   }
 });
 
@@ -70,10 +59,10 @@ swipeArea.addEventListener('touchend', (e) => {
 
   if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
     if (dx < 0) {
-      socket.emit('navigate', 'next');
+      broadcast('navigate', { direction: 'next' });
       startTimer();
     } else {
-      socket.emit('navigate', 'prev');
+      broadcast('navigate', { direction: 'prev' });
     }
   }
 }, { passive: true });
@@ -110,7 +99,6 @@ function updateUI() {
   slideTotal.textContent = total;
   progressBar.style.width = `${(current / total) * 100}%`;
 
-  // Find notes for current slide
   const note = (state.notes || []).find(
     n => n.indexh === state.indexh && n.indexv === (state.indexv || 0)
   );

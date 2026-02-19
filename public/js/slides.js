@@ -1,4 +1,3 @@
-const socket = io();
 const params = new URLSearchParams(window.location.search);
 const file = params.get('file');
 const mode = params.get('mode') || 'presenter'; // presenter | audience | embed
@@ -15,14 +14,12 @@ async function loadPresentation() {
   const ext = file.split('.').pop().toLowerCase();
 
   if (ext === 'deck') {
-    const res = await fetch(`/api/presentations/${file}`);
-    const data = await res.json();
-    const html = DeckRenderer.render(data.content);
+    const pres = await PresentationsDB.get(file);
+    const html = DeckRenderer.render(pres.content);
     document.getElementById('slides-container').innerHTML = html;
   } else if (ext === 'md') {
-    const res = await fetch(`/api/presentations/${file}`);
-    const data = await res.json();
-    const slides = parseMarkdownSlides(data.content);
+    const pres = await PresentationsDB.get(file);
+    const slides = parseMarkdownSlides(pres.markdown_content || pres.content);
     document.getElementById('slides-container').innerHTML = slides;
   } else if (ext === 'pdf') {
     await loadPdfSlides(`/uploads/${file}`);
@@ -34,14 +31,10 @@ async function loadPresentation() {
 }
 
 function parseMarkdownSlides(content) {
-  // Remove frontmatter
   content = content.replace(/^---\n[\s\S]*?\n---\n/, '');
-
-  // Split by horizontal rule (---)
   const slides = content.split(/\n---\n/);
 
   return slides.map(slide => {
-    // Check for vertical slides (separated by -v-)
     const verticals = slide.split(/\n-v-\n/);
     if (verticals.length > 1) {
       const inner = verticals.map(v => {
@@ -70,12 +63,6 @@ function extractNotes(slideContent) {
 }
 
 async function loadPdfSlides(pdfUrl) {
-  // Load PDF.js from CDN
-  const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
-  script.type = 'module';
-
-  // Use image-based approach for PDF
   const container = document.getElementById('slides-container');
   container.innerHTML = '<section><h2>Loading PDF...</h2></section>';
 
@@ -119,17 +106,17 @@ function initReveal() {
     const totalSlides = deck.getTotalSlides();
     const allNotes = getAllNotes();
 
-    // Notify server
-    socket.emit('presentation-loaded', {
+    // Notify others that presentation loaded
+    broadcast('presentation-loaded', {
       presentation: file,
       totalSlides,
       notes: allNotes
     });
 
-    // Listen for slide changes (this presenter controls)
+    // Presenter mode: broadcast slide changes
     if (mode === 'presenter') {
       deck.on('slidechanged', (event) => {
-        socket.emit('slide-changed', {
+        broadcast('slide-changed', {
           indexh: event.indexh,
           indexv: event.indexv,
           totalSlides,
@@ -139,23 +126,20 @@ function initReveal() {
     }
 
     // Listen for remote navigation
-    socket.on('navigate', (direction) => {
-      if (direction === 'next') deck.next();
-      else if (direction === 'prev') deck.prev();
-      else if (direction === 'up') deck.up();
-      else if (direction === 'down') deck.down();
+    onBroadcast('navigate', (data) => {
+      if (data.direction === 'next') deck.next();
+      else if (data.direction === 'prev') deck.prev();
+      else if (data.direction === 'up') deck.up();
+      else if (data.direction === 'down') deck.down();
     });
 
-    socket.on('navigate-to', (data) => {
+    onBroadcast('navigate-to', (data) => {
       deck.slide(data.indexh, data.indexv || 0);
     });
 
     // Audience mode: follow presenter
     if (mode === 'audience') {
-      socket.on('slide-changed', (state) => {
-        deck.slide(state.indexh, state.indexv || 0);
-      });
-      socket.on('state-update', (state) => {
+      onBroadcast('slide-changed', (state) => {
         deck.slide(state.indexh, state.indexv || 0);
       });
     }
