@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  verify:
+    name: Server Start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify server starts
+        run: |
+          timeout 10 node server.js &
+          sleep 3
+          curl -f http://localhost:${PORT:-5555}/ || exit 1
+        env:
+          PORT: 5555
